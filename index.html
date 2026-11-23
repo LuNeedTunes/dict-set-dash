@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Dict & Set Dash: a Chapter 9 Dictionaries and Sets study game for Meta Ray-Ban Display.">
+<meta name="mrbd-web-app-capable" content="yes">
+<title>Dict &amp; Set Dash</title>
+<style>
+  :root{
+    --fg:#e8f4ff; --dim:#8fb3c9; --accent:#00d4ff; --good:#4dff9a; --bad:#ff5c7a; --gold:#ffd84d;
+    --panel:#07141c; --line:#1d4256;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#000}
+  body{width:600px;height:600px;overflow:hidden;color:var(--fg);
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0 auto;position:relative}
+  .screen{position:absolute;inset:0;padding:16px;display:none;flex-direction:column}
+  .screen.on{display:flex}
+  h1{font-size:40px;line-height:1.1;color:var(--accent);text-align:center;margin-top:30px;letter-spacing:.5px}
+  .sub{font-size:20px;color:var(--dim);text-align:center;margin:10px 0 22px}
+  .btn{display:flex;align-items:center;min-height:88px;padding:12px 18px;margin-bottom:10px;
+       border:2px solid var(--line);border-radius:16px;background:var(--panel);
+       font-size:22px;color:var(--fg);cursor:pointer;width:100%;text-align:left;font-family:inherit}
+  .btn small{display:block;font-size:16px;color:var(--dim);margin-top:4px}
+  .btn.focus{border-color:var(--accent);box-shadow:0 0 20px rgba(0,212,255,.4)}
+  .btn.right{border-color:var(--good);box-shadow:0 0 18px rgba(77,255,154,.35)}
+  .btn.wrong{border-color:var(--bad);box-shadow:0 0 18px rgba(255,92,122,.35)}
+  .btn .key{flex:0 0 34px;height:34px;border-radius:50%;border:2px solid var(--line);display:flex;
+       align-items:center;justify-content:center;font-size:17px;color:var(--dim);margin-right:14px}
+  .btn .txt{flex:1;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:21px;word-break:break-word}
+  .btn .txt.plain{font-family:inherit}
+  .hud{display:flex;justify-content:space-between;align-items:center;font-size:18px;color:var(--dim);height:28px}
+  .hud b{color:var(--fg)}
+  .hud .streak{color:var(--gold)}
+  .bar{height:6px;border-radius:3px;background:#0f2633;margin:6px 0 10px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);width:100%}
+  .prompt{font-size:22px;line-height:1.3;margin-bottom:8px}
+  pre{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:19px;line-height:1.35;color:#bfe9ff;
+      background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:10px;white-space:pre-wrap}
+  .opts{margin-top:auto}
+  .opts .btn{min-height:70px;margin-bottom:8px}
+  .big{font-size:44px;font-weight:700;text-align:center}
+  .verdict{font-size:34px;font-weight:700;text-align:center;margin:8px 0 6px}
+  .ans{font-size:20px;color:var(--dim);text-align:center;margin-bottom:4px}
+  .ans code,.why code{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--fg)}
+  .why{font-size:20px;line-height:1.4;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+  .stats{display:flex;justify-content:space-around;margin:14px 0 18px}
+  .stat{text-align:center}
+  .stat div{font-size:34px;font-weight:700}
+  .stat span{font-size:16px;color:var(--dim)}
+  .hint{font-size:16px;color:var(--dim);text-align:center;margin-top:auto}
+  .good{color:var(--good)} .bad{color:var(--bad)} .gold{color:var(--gold)}
+  .lives{letter-spacing:3px}
+</style>
+</head>
+<body>
+
+<!-- TITLE -->
+<section class="screen on" id="title">
+  <h1>Dict &amp; Set Dash</h1>
+  <p class="sub">Chapter 09 · Dictionaries and Sets</p>
+  <button class="btn" data-act="run"><span class="txt plain">Quiz Run<small>20 questions, like the real quiz</small></span></button>
+  <button class="btn" data-act="survival"><span class="txt plain">Survival<small>Keep going until you miss 3</small></span></button>
+  <button class="btn" data-act="cram"><span class="txt plain">Flash Cram<small>No timer, just learn</small></span></button>
+  <p class="hint">Swipe up/down to move · pinch to pick · <span id="bestline"></span></p>
+</section>
+
+<!-- QUESTION -->
+<section class="screen" id="play">
+  <div class="hud">
+    <span id="hudLeft"></span>
+    <span class="streak" id="hudStreak"></span>
+    <span>Score <b id="hudScore">0</b></span>
+  </div>
+  <div class="bar"><i id="timebar"></i></div>
+  <div class="prompt" id="qText"></div>
+  <pre id="qCode"></pre>
+  <div class="opts" id="opts"></div>
+</section>
+
+<!-- FEEDBACK -->
+<section class="screen" id="feedback">
+  <div class="verdict" id="fbVerdict"></div>
+  <div class="ans" id="fbAns"></div>
+  <div class="why" id="fbWhy"></div>
+  <button class="btn" data-act="next" style="margin-top:auto"><span class="txt plain" id="nextLabel">Next question</span></button>
+</section>
+
+<!-- RESULTS -->
+<section class="screen" id="results">
+  <h1 id="resTitle" style="margin-top:8px">Run complete</h1>
+  <div class="stats">
+    <div class="stat"><div id="resScore">0</div><span>score</span></div>
+    <div class="stat"><div id="resAcc">0%</div><span>correct</span></div>
+    <div class="stat"><div id="resBest" class="gold">0</div><span>best</span></div>
+  </div>
+  <p class="sub" id="resMsg" style="margin:0 0 14px"></p>
+  <button class="btn" data-act="review"><span class="txt plain" id="reviewLabel">Review what I missed</span></button>
+  <button class="btn" data-act="again"><span class="txt plain">Play again</span></button>
+  <button class="btn" data-act="home"><span class="txt plain">Main menu</span></button>
+</section>
+
+<!-- REVIEW -->
+<section class="screen" id="review">
+  <div class="hud"><span>Review</span><span id="revCount"></span></div>
+  <div class="prompt" id="revQ" style="margin-top:8px"></div>
+  <pre id="revCode"></pre>
+  <div class="ans" style="text-align:left">Answer: <code id="revAns"></code></div>
+  <div class="why" id="revWhy"></div>
+  <button class="btn" data-act="revnext" style="margin-top:auto"><span class="txt plain" id="revNextLabel">Next</span></button>
+</section>
+
+<script>
+// ---------- Question bank (every code answer checked in Python) ----------
+// opts[0] is always the correct answer; options are shuffled at runtime.
+const BANK = [
+ {q:"What does this print?", c:"d = {'a': 1, 'b': 2}\nd['a'] = 5\nprint(len(d))", o:["2","3","1","KeyError"], w:"Assigning to an existing key <b>replaces</b> its value. No new pair is added."},
+ {q:"Key 'z' is not in d. What does d.get('z') return?", o:["None","KeyError","0","False"], w:"<code>get</code> never raises. With no default it returns <code>None</code>."},
+ {q:"Key 'z' is not in d. What does d.get('z', 0) return?", o:["0","None","KeyError","'z'"], w:"The second argument is the default returned when the key is missing."},
+ {q:"Key 'z' is not in d. What happens with d['z']?", o:["KeyError","Returns None","IndexError","Adds 'z' to d"], w:"Square-bracket lookup of a missing key raises <code>KeyError</code>."},
+ {q:"What does x = {} create?", o:["An empty dictionary","An empty set","An empty list","A syntax error"], w:"<code>{}</code> is an empty dict. An empty set must be <code>set()</code>."},
+ {q:"What is len(s)?", c:"s = set('banana')", o:["3","6","1","2"], w:"<code>set()</code> on a string splits it into characters and drops duplicates: b, a, n."},
+ {q:"What is the result?", c:"{1, 2, 3} | {2, 3, 4}", o:["{1, 2, 3, 4}","{2, 3}","{1, 4}","{1}"], w:"<code>|</code> is <b>union</b>: everything in either set."},
+ {q:"What is the result?", c:"{1, 2, 3} & {2, 3, 4}", o:["{2, 3}","{1, 2, 3, 4}","{1, 4}","{4}"], w:"<code>&amp;</code> is <b>intersection</b>: only what is in both."},
+ {q:"What is the result?", c:"{1, 2, 3} - {2, 3, 4}", o:["{1}","{4}","{1, 4}","{2, 3}"], w:"<code>-</code> is <b>difference</b>: in the first set but not the second."},
+ {q:"What is the result?", c:"{1, 2, 3} ^ {2, 3, 4}", o:["{1, 4}","{2, 3}","{1}","{1, 2, 3, 4}"], w:"<code>^</code> is <b>symmetric difference</b>: in one set or the other, not both."},
+ {q:"What does this print?", c:"print({2, 3} <= {1, 2, 3})", o:["True","False","{2, 3}","TypeError"], w:"<code>&lt;=</code> tests <b>subset</b>. Every element of {2, 3} is in {1, 2, 3}."},
+ {q:"What does this print?", c:"A = {1, 2, 3}\nprint(A.issuperset({1, 2}))", o:["True","False","{3}","None"], w:"A contains every element of {1, 2}, so A is a superset."},
+ {q:"What does this print?", c:"d = {'x': 1, 'y': 2}\nprint(d.pop('y'))", o:["2","'y'","('y', 2)","None"], w:"<code>pop(key)</code> removes the pair and returns its <b>value</b>."},
+ {q:"What does this print?", c:"d = {1: 'one', 2: 'two'}\nprint(d.popitem())", o:["(2, 'two')","(1, 'one')","'two'","2"], w:"<code>popitem()</code> removes and returns the <b>last-added</b> pair as a tuple."},
+ {q:"What does this create?", c:"{n: n * 2 for n in range(3)}", o:["{0: 0, 1: 2, 2: 4}","{0, 2, 4}","[0, 2, 4]","{1: 2, 2: 4, 3: 6}"], w:"A dictionary comprehension: <code>key: value</code> for each n in 0, 1, 2."},
+ {q:"What does this create?", c:"{x % 3 for x in range(6)}", o:["{0, 1, 2}","{0, 1, 2, 0, 1, 2}","[0, 1, 2, 0, 1, 2]","{0: 0, 1: 1, 2: 2}"], w:"A set comprehension. Duplicates are dropped automatically."},
+ {q:"9 is not in s. What does s.remove(9) do?", o:["Raises KeyError","Nothing happens","Raises ValueError","Returns None"], w:"<code>remove</code> raises <code>KeyError</code> for a missing element. <code>discard</code> does not."},
+ {q:"9 is not in s. What does s.discard(9) do?", o:["Nothing happens","Raises KeyError","Raises ValueError","Removes the last element"], w:"<code>discard</code> is the safe remove: no error if the element is missing."},
+ {q:"What does this print?", c:"s = set()\ns.update('hi')\nprint(len(s))", o:["2","1","0","TypeError"], w:"<code>update</code> takes an iterable, so the string is split into 'h' and 'i'."},
+ {q:"What does this print?", c:"print(len(set(['hello'])))", o:["1","5","4","0"], w:"Wrapping the string in a list keeps it as one element."},
+ {q:"Which of these can be a dictionary key?", o:["A tuple","A list","A set","A dictionary"], w:"Keys must be <b>immutable</b>. Tuples are; lists, sets and dicts are not."},
+ {q:"Which is true about dictionary values?", o:["They can be any type","They must be immutable","They must be unique","They must be strings"], w:"Only <b>keys</b> have rules (unique, immutable). Values can be anything, even lists."},
+ {q:"What does  for k in d:  loop over?", o:["The keys","The values","(key, value) tuples","Index numbers"], w:"Looping over a dict gives keys. Use <code>d.items()</code> for pairs, <code>d.values()</code> for values."},
+ {q:"What does this print?", c:"d = {1: 'one'}\nprint('one' in d)", o:["False","True","KeyError","1"], w:"<code>in</code> checks <b>keys</b>, not values. 'one' is a value."},
+ {q:"What does d.items() return?", o:["(key, value) pairs","Only the keys","Only the values","A sorted list"], w:"Each item is a tuple of key and value. Great with <code>for k, v in d.items():</code>"},
+ {q:"What does this print?", c:"d = {'a': 1}\nd['b'] = 2\nprint(d)", o:["{'a': 1, 'b': 2}","{'b': 2}","KeyError","{'a': 1}"], w:"Assigning to a new key <b>adds</b> a pair."},
+ {q:"Key 'q' is not in d. What does del d['q'] do?", o:["Raises KeyError","Nothing happens","Deletes the last pair","Returns None"], w:"<code>del</code> needs the key to exist."},
+ {q:"What does d.clear() do?", o:["Removes all pairs; d becomes {}","Deletes the variable d","Removes the last pair","Sets every value to None"], w:"<code>clear</code> empties the dictionary but d still exists."},
+ {q:"What does this print?", c:"s = {1, 2, 3}\nprint(s[0])", o:["TypeError","1","KeyError","IndexError"], w:"Sets are unordered and not subscriptable, so indexing raises <code>TypeError</code>."},
+ {q:"What does sorted({3, 1, 2}) return?", o:["[1, 2, 3]","{1, 2, 3}","(1, 2, 3)","None"], w:"<code>sorted()</code> always returns a <b>list</b>."},
+ {q:"What does this print?", c:"print(set([4, 4, 4]))", o:["{4}","{4, 4, 4}","[4]","4"], w:"Sets keep only unique elements."},
+ {q:"What does dict() create?", o:["An empty dictionary","An empty set","None","A syntax error"], w:"<code>dict()</code> and <code>{}</code> both make an empty dictionary."},
+ {q:"In Python, what is 'pickling'?", o:["Serializing an object into bytes","Sorting a dictionary","Encrypting a file","Removing duplicates"], w:"Pickling converts an object to a byte stream so it can be saved to a file."},
+ {q:"Which file mode does pickle.dump() need?", o:["'wb'","'w'","'rb'","'a'"], w:"Pickle writes <b>binary</b>: <code>'wb'</code> to write, <code>'rb'</code> to read."},
+ {q:"Which function reads a pickled object back?", o:["pickle.load(file)","pickle.dump(file)","pickle.read(file)","file.unpickle()"], w:"<code>dump</code> saves, <code>load</code> reads back."},
+ {q:"What exception does pickle.load raise at end of file?", o:["EOFError","KeyError","StopIteration","IOError"], w:"Loop with <code>try</code> / <code>except EOFError</code> to read every object."},
+ {q:"Which set method adds ONE element?", o:["add()","update()","append()","insert()"], w:"<code>add</code> adds one item. <code>update</code> adds many. Sets have no <code>append</code>."},
+ {q:"What is the difference between union and intersection?", o:["Union: in either; intersection: in both","Union: in both; intersection: in either","They are the same","Union removes duplicates; intersection keeps them"], w:"Union <code>|</code> combines; intersection <code>&amp;</code> keeps only shared elements."}
+];
+
+// ---------- Utilities ----------
+const $ = id => document.getElementById(id);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function loadBest(mode){ try { return +(localStorage.getItem("dsd-best-" + mode) || 0); } catch(e){ return 0; } }
+function saveBest(mode, v){ try { localStorage.setItem("dsd-best-" + mode, v); } catch(e){} }
+
+// ---------- Focus / input (D-pad: arrows + Enter) ----------
+let screen = "title", focusIdx = 0;
+function focusables(){ return [...$(screen).querySelectorAll(".btn:not([disabled])")]; }
+function paintFocus(){
+  const f = focusables();
+  f.forEach((b, i) => b.classList.toggle("focus", i === focusIdx));
+}
+function show(id, startFocus = 0){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  $(id).classList.add("on"); screen = id; focusIdx = startFocus; paintFocus();
+}
+document.addEventListener("keydown", e => {
+  const f = focusables();
+  if (e.key === "ArrowDown" || e.key === "ArrowRight"){
+    if (screen === "review" && e.key === "ArrowRight"){ e.preventDefault(); revStep(1); return; }
+    e.preventDefault(); if (f.length) { focusIdx = (focusIdx + 1) % f.length; paintFocus(); }
+  } else if (e.key === "ArrowUp" || e.key === "ArrowLeft"){
+    if (screen === "review" && e.key === "ArrowLeft"){ e.preventDefault(); revStep(-1); return; }
+    e.preventDefault(); if (f.length) { focusIdx = (focusIdx - 1 + f.length) % f.length; paintFocus(); }
+  } else if (e.key === "Enter" || e.key === " "){
+    e.preventDefault(); if (f[focusIdx]) f[focusIdx].click();
+  } else if (e.key === "Escape"){
+    e.preventDefault(); stopTimer(); goHome();
+  }
+});
+document.addEventListener("click", e => {
+  const b = e.target.closest(".btn"); if (!b) return;
+  const f = focusables(); const i = f.indexOf(b); if (i >= 0) { focusIdx = i; paintFocus(); }
+  const act = b.dataset.act; if (act) actions[act]();
+  else if (b.dataset.opt !== undefined) answer(+b.dataset.opt);
+});
+
+// ---------- Game state ----------
+const TIME = 20; // seconds per question
+let mode, deck, qi, cur, score, streak, correct, answered, lives, missed, timer, tLeft;
+
+function start(m){
+  mode = m; deck = shuffle(BANK); qi = 0; score = 0; streak = 0; correct = 0; answered = 0; lives = 3; missed = [];
+  if (mode === "run") deck = deck.slice(0, 20);
+  nextQ();
+}
+function nextQ(){
+  if (mode === "run" && qi >= deck.length) return finish();
+  if (mode === "survival" && lives <= 0) return finish();
+  if (mode === "cram" && qi >= deck.length) return finish();
+  if (qi >= deck.length){ deck = deck.concat(shuffle(BANK)); } // survival: endless
+  const src = deck[qi];
+  const order = shuffle([0,1,2,3]);
+  cur = { src, opts: order.map(i => src.o[i]), right: order.indexOf(0) };
+  $("qText").textContent = src.q;
+  const code = $("qCode"); code.style.display = src.c ? "block" : "none"; code.textContent = src.c || "";
+  const box = $("opts"); box.innerHTML = "";
+  cur.opts.forEach((t, i) => {
+    const b = document.createElement("button"); b.className = "btn"; b.dataset.opt = i;
+    const plain = !/[{}\[\]()'=]|^\d+$|Error$|^None$|^True$|^False$/.test(t);
+    b.innerHTML = `<span class="key">${"ABCD"[i]}</span><span class="txt${plain ? " plain" : ""}">${esc(t)}</span>`;
+    box.appendChild(b);
+  });
+  hud(); show("play", 0); startTimer();
+}
+function hud(){
+  if (mode === "run") $("hudLeft").innerHTML = `Q <b>${qi + 1}</b>/${deck.length}`;
+  else if (mode === "survival") $("hudLeft").innerHTML = `<span class="lives bad">${"♥".repeat(lives)}${"<span style='opacity:.25'>♥</span>".repeat(3 - lives)}</span> Q${qi + 1}`;
+  else $("hudLeft").innerHTML = `Card <b>${qi + 1}</b>/${deck.length}`;
+  $("hudStreak").textContent = streak >= 2 ? `🔥 ${streak} streak` : "";
+  $("hudScore").textContent = score;
+}
+function startTimer(){
+  stopTimer();
+  const bar = $("timebar");
+  if (mode === "cram"){ bar.style.width = "0%"; return; }
+  tLeft = TIME; bar.style.width = "100%"; bar.style.background = "var(--accent)";
+  const t0 = Date.now();
+  timer = setInterval(() => {
+    tLeft = Math.max(0, TIME - (Date.now() - t0) / 1000);
+    bar.style.width = (tLeft / TIME * 100) + "%";
+    if (tLeft < 6) bar.style.background = "var(--bad)";
+    if (tLeft <= 0){ stopTimer(); answer(-1); }
+  }, 100);
+}
+function stopTimer(){ if (timer){ clearInterval(timer); timer = null; } }
+
+function answer(i){
+  if (screen !== "play") return;
+  stopTimer();
+  const ok = i === cur.right;
+  answered++;
+  let gained = 0;
+  if (ok){
+    correct++; streak++;
+    const timeBonus = mode === "cram" ? 0 : Math.round(tLeft * 3);
+    const mult = 1 + Math.min(streak - 1, 5) * 0.2;
+    gained = Math.round((100 + timeBonus) * mult);
+    score += gained;
+  } else {
+    streak = 0; if (mode === "survival") lives--;
+    missed.push(cur.src);
+  }
+  // Mark the buttons briefly, then show feedback
+  const btns = [...$("opts").children];
+  btns[cur.right].classList.add("right");
+  if (i >= 0 && !ok) btns[i].classList.add("wrong");
+  btns.forEach(b => b.classList.remove("focus"));
+  setTimeout(() => {
+    $("fbVerdict").innerHTML = ok ? `<span class="good">Correct! +${gained}</span>`
+      : (i < 0 ? `<span class="bad">Time's up</span>` : `<span class="bad">Not quite</span>`);
+    $("fbAns").innerHTML = `Answer: <code>${esc(cur.src.o[0])}</code>`;
+    $("fbWhy").innerHTML = cur.src.w;
+    const last = (mode === "run" || mode === "cram") ? qi + 1 >= deck.length : lives <= 0;
+    $("nextLabel").textContent = last ? "See results" : "Next question";
+    qi++;
+    show("feedback", 0);
+  }, 650);
+}
+
+function finish(){
+  stopTimer();
+  const best = Math.max(loadBest(mode), score);
+  saveBest(mode, best);
+  const acc = answered ? Math.round(correct / answered * 100) : 0;
+  $("resTitle").textContent = mode === "survival" ? "Out of lives" : (mode === "cram" ? "Deck done" : "Run complete");
+  $("resScore").textContent = score;
+  $("resAcc").textContent = acc + "%";
+  $("resBest").textContent = best;
+  $("resMsg").textContent = acc >= 90 ? "Quiz-ready. Go take it." : acc >= 70 ? "Close. Review the misses, then run it again." : "Review the misses and try Flash Cram.";
+  const rb = document.querySelector('[data-act="review"]');
+  rb.disabled = missed.length === 0; rb.style.display = missed.length ? "flex" : "none";
+  $("reviewLabel").textContent = `Review what I missed (${missed.length})`;
+  show("results", 0);
+}
+
+// ---------- Review missed ----------
+let ri = 0;
+function renderReview(){
+  const m = missed[ri];
+  $("revCount").textContent = `${ri + 1} / ${missed.length}`;
+  $("revQ").textContent = m.q;
+  const c = $("revCode"); c.style.display = m.c ? "block" : "none"; c.textContent = m.c || "";
+  $("revAns").textContent = m.o[0];
+  $("revWhy").innerHTML = m.w;
+  $("revNextLabel").textContent = ri + 1 < missed.length ? "Next (or swipe right)" : "Back to results";
+}
+function revStep(d){ ri = Math.max(0, Math.min(missed.length - 1, ri + d)); renderReview(); }
+
+function goHome(){
+  const b = Math.max(loadBest("run"), loadBest("survival"));
+  $("bestline").textContent = b ? `best ${b}` : "Esc = menu";
+  show("title", 0);
+}
+
+const actions = {
+  run: () => start("run"),
+  survival: () => start("survival"),
+  cram: () => start("cram"),
+  next: () => nextQ(),
+  again: () => start(mode),
+  home: () => goHome(),
+  review: () => { if (!missed.length) return; ri = 0; renderReview(); show("review", 0); },
+  revnext: () => { if (ri + 1 < missed.length) revStep(1); else show("results", 1); }
+};
+
+goHome();
+</script>
+</body>
+</html>
